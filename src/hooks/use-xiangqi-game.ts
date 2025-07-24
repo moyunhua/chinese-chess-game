@@ -1,27 +1,29 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useKV } from '@github/spark/hooks';
 import { GameState, Position, Move, initialBoard, Player } from '@/lib/xiangqi-types';
 import { getValidMoves, makeMove, isInCheck, isCheckmate } from '@/lib/xiangqi-rules';
 import { getBestMove } from '@/lib/xiangqi-ai';
 
-export function useXiangqiGame() {
-  const [gameState, setGameState] = useKV<GameState>('xiangqi-game', {
-    board: initialBoard,
-    currentPlayer: 'red',
-    selectedPosition: null,
-    validMoves: [],
-    moveHistory: [],
-    gameOver: false,
-    winner: null,
-    inCheck: false
-  });
+const createInitialGameState = (): GameState => ({
+  board: initialBoard,
+  currentPlayer: 'red',
+  selectedPosition: null,
+  validMoves: [],
+  moveHistory: [],
+  gameOver: false,
+  winner: null,
+  inCheck: false
+});
 
+export function useXiangqiGame() {
+  const initialGameState = useMemo(createInitialGameState, []);
+  const [gameState, setGameState] = useKV<GameState>('xiangqi-game', initialGameState);
   const [isAiThinking, setIsAiThinking] = useState(false);
 
   const selectPosition = useCallback((position: Position) => {
-    if (gameState.gameOver || gameState.currentPlayer === 'black') return;
-
     setGameState((current) => {
+      if (current.gameOver || current.currentPlayer === 'black') return current;
+
       const piece = current.board[position.row][position.col];
       
       if (current.selectedPosition) {
@@ -72,57 +74,56 @@ export function useXiangqiGame() {
       
       return current;
     });
-  }, [gameState.gameOver, gameState.currentPlayer, setGameState]);
+  }, [setGameState]);
 
-  const makeAiMove = useCallback(async () => {
-    if (gameState.currentPlayer !== 'black' || gameState.gameOver || isAiThinking) return;
-    
-    setIsAiThinking(true);
-    
-    setTimeout(() => {
-      setGameState((current) => {
-        if (current.currentPlayer !== 'black' || current.gameOver) {
-          return current;
-        }
-
-        const aiMove = getBestMove(current.board, 'black', 3);
-        
-        if (aiMove) {
-          const newBoard = makeMove(current.board, aiMove.from, aiMove.to);
-          
-          const newState = {
-            board: newBoard,
-            currentPlayer: 'red' as Player,
-            selectedPosition: null,
-            validMoves: [],
-            moveHistory: [...current.moveHistory, aiMove],
-            gameOver: isCheckmate(newBoard, 'red'),
-            winner: isCheckmate(newBoard, 'red') ? 'black' as Player : null,
-            inCheck: isInCheck(newBoard, 'red')
-          };
-          
-          return newState;
-        }
-        
+  const makeAiMove = useCallback(() => {
+    setGameState((current) => {
+      if (current.currentPlayer !== 'black' || current.gameOver || isAiThinking) {
         return current;
-      });
-      
-      // Set AI thinking to false after the state update
-      setIsAiThinking(false);
-    }, 500);
-  }, [gameState.currentPlayer, gameState.gameOver, isAiThinking, setGameState]);
+      }
+
+      setIsAiThinking(true);
+
+      // Use setTimeout to avoid blocking the UI
+      setTimeout(() => {
+        setGameState((latestState) => {
+          if (latestState.currentPlayer !== 'black' || latestState.gameOver) {
+            setIsAiThinking(false);
+            return latestState;
+          }
+
+          const aiMove = getBestMove(latestState.board, 'black', 3);
+          
+          if (aiMove) {
+            const newBoard = makeMove(latestState.board, aiMove.from, aiMove.to);
+            
+            const newState = {
+              board: newBoard,
+              currentPlayer: 'red' as Player,
+              selectedPosition: null,
+              validMoves: [],
+              moveHistory: [...latestState.moveHistory, aiMove],
+              gameOver: isCheckmate(newBoard, 'red'),
+              winner: isCheckmate(newBoard, 'red') ? 'black' as Player : null,
+              inCheck: isInCheck(newBoard, 'red')
+            };
+            
+            setIsAiThinking(false);
+            return newState;
+          }
+          
+          setIsAiThinking(false);
+          return latestState;
+        });
+      }, 500);
+
+      return current;
+    });
+  }, [setGameState, isAiThinking]);
 
   const resetGame = useCallback(() => {
-    setGameState({
-      board: initialBoard,
-      currentPlayer: 'red',
-      selectedPosition: null,
-      validMoves: [],
-      moveHistory: [],
-      gameOver: false,
-      winner: null,
-      inCheck: false
-    });
+    setIsAiThinking(false);
+    setGameState(createInitialGameState());
   }, [setGameState]);
 
   return {

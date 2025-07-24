@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { GameBoard } from '@/components/GameBoard';
 import { MoveHistory } from '@/components/MoveHistory';
 import { GameStatus } from '@/components/GameStatus';
@@ -8,13 +8,39 @@ import { Button } from '@/components/ui/button';
 import { Crown } from '@phosphor-icons/react';
 
 function App() {
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  useEffect(() => {
+    // Give a moment for the environment to initialize
+    const timer = setTimeout(() => {
+      setIsInitialized(true);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-primary mb-2">中国象棋</h1>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return <XiangqiGameApp />;
+}
+
+function XiangqiGameApp() {
   const { gameState, selectPosition, makeAiMove, resetGame, isAiThinking } = useXiangqiGame();
 
   useEffect(() => {
-    if (gameState.currentPlayer === 'black' && !gameState.gameOver) {
+    if (gameState.currentPlayer === 'black' && !gameState.gameOver && !isAiThinking) {
       makeAiMove();
     }
-  }, [gameState.currentPlayer, gameState.gameOver, makeAiMove]);
+  }, [gameState.currentPlayer, gameState.gameOver, isAiThinking, makeAiMove]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 p-4">
