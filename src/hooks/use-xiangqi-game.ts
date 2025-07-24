@@ -82,7 +82,6 @@ export function useXiangqiGame() {
     setTimeout(() => {
       setGameState((current) => {
         if (current.currentPlayer !== 'black' || current.gameOver) {
-          setIsAiThinking(false);
           return current;
         }
 
@@ -102,13 +101,14 @@ export function useXiangqiGame() {
             inCheck: isInCheck(newBoard, 'red')
           };
           
-          setIsAiThinking(false);
           return newState;
         }
         
-        setIsAiThinking(false);
         return current;
       });
+      
+      // Set AI thinking to false after the state update
+      setIsAiThinking(false);
     }, 500);
   }, [gameState.currentPlayer, gameState.gameOver, isAiThinking, setGameState]);
 
