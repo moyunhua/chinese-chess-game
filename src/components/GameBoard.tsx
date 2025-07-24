@@ -116,8 +116,8 @@ export const GameBoard = memo(({ gameState, onPositionSelect }: GameBoardProps) 
               key={`move-${index}`}
               className="absolute w-4 h-4 bg-accent rounded-full border-2 border-accent-foreground cursor-pointer hover:scale-125 transition-transform"
               style={{
-                left: `${move.col * 60 + 36}px`,
-                top: `${move.row * 55 + 36}px`,
+                left: `${30 + move.col * 60 - 8}px`,
+                top: `${30 + move.row * 55 - 8}px`,
                 zIndex: 8
               }}
               onClick={() => onPositionSelect(move)}

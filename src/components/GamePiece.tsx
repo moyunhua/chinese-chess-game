@@ -26,8 +26,8 @@ export const GamePiece = memo(({ piece, position, isSelected, isValidMove, onSel
         isValidMove && piece && "ring-2 ring-destructive"
       )}
       style={{
-        left: `${position.col * 60 + 20}px`,
-        top: `${position.row * 55 + 20}px`,
+        left: `${30 + position.col * 60 - 24}px`,
+        top: `${30 + position.row * 55 - 24}px`,
         zIndex: isSelected ? 20 : piece ? 10 : 5
       }}
       onClick={() => onSelect(position)}

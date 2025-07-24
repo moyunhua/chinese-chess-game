@@ -15,9 +15,18 @@ const createInitialGameState = (): GameState => ({
   inCheck: false
 });
 
+// Generate a unique game ID for each user session
+const generateGameId = () => {
+  return `xiangqi-game-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+};
+
 export function useXiangqiGame() {
   const initialGameState = useMemo(createInitialGameState, []);
-  const [gameState, setGameState] = useKV<GameState>('xiangqi-game', initialGameState);
+  
+  // Create a unique game ID for this session
+  const [gameId] = useState(() => generateGameId());
+  
+  const [gameState, setGameState] = useKV<GameState>(gameId, initialGameState);
   const [isAiThinking, setIsAiThinking] = useState(false);
 
   const selectPosition = useCallback((position: Position) => {
